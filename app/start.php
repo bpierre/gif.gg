@@ -7,6 +7,9 @@ require_once APP.'/lib/url-id-manager.php';
 
 use RedBean_Facade as R;
 R::setup('mysql:host='.DB_HOST.'; dbname='.DB_NAME, DB_USER, DB_PASS);
+if (!DEBUG) {
+  R::freeze(TRUE);
+}
 
 $app = new Silex\Application();
 $app['debug'] = DEBUG;
