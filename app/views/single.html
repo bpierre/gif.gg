@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+
+{% block metas %}
+		<meta name="twitter:card" content="player">
+		<meta name="twitter:site" content="@_gifgg">
+		<meta name="twitter:title" content="gif.gg/{{ gif_id }}">
+		<meta name="twitter:player" content="https://gif.gg/twitter-player/{{ gif_id }}">
+		<meta name="twitter:player:width" content="320">
+		<meta name="twitter:player:height" content="240">
+		<meta name="twitter:image" content="https://gif.gg{{ gif_url }}">
+{% endblock %}
+{% block content %}
+		<div class="single">
+			<a href="{{ gif_url }}"><img src="{{ gif_url }}" alt=""></a>
+		</div>
+		{% include 'back-to-home.html' %}
+{% endblock %}
+

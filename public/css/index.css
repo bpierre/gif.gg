@@ -1,0 +1,152 @@
+body {
+  width: 660px;
+  margin: 0 auto 40px;
+  text-align: center;
+  color: black;
+  background: white;
+}
+body, button {
+  font: 16px 'Droid sans', sans-serif;
+  text-transform: lowercase;
+}
+h1 {
+  margin: 40px 0;
+}
+h1 a {
+  color: black;
+  text-decoration: none;
+}
+footer {
+  margin: 40px 0 0;
+}
+.app {
+  position: relative;
+  width: 660px;
+}
+.screens {
+  overflow: hidden;
+}
+.cam-preview {
+  float: left;
+}
+.gif-preview {
+  float: right;
+  width: 320px;
+  height: 240px;
+  color: white;
+  background: black;
+}
+.gif-preview.empty {
+  height: 180px;
+  padding-top: 60px;
+  line-height: 40px;
+}
+.progress {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.progress label {
+  margin-right: 5px;
+}
+.unsupported {
+  line-height: 30px;
+}
+
+button {
+  font-size: 24px;
+  cursor: pointer;
+}
+.shot-button {
+  float: left;
+  width: 320px;
+  margin: 20px 0 40px;
+}
+.shot-button button {
+  vertical-align: middle;
+}
+.shot-button label {
+  display: inline-block;
+  padding: 0 10px 0 0;
+  vertical-align: middle;
+}
+.shot-button input {
+  width: 180px;
+  margin: 0;
+}
+.timer-on-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 240px;
+  line-height: 240px;
+  font-size: 100px;
+  color: white;
+}
+.timer-on-preview.photo {
+  background: white;
+}
+.gif-delay {
+  position: relative;
+  float: right;
+  display: inline-block;
+  width: 270px;
+  margin: 20px 25px 40px 15px;
+  vertical-align: middle;
+}
+.gif-delay .min,
+.gif-delay .max {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.gif-delay .max {
+  left: auto;
+  right: 0;
+}
+.gif-delay input {
+  width: 100%;
+  margin: 0;
+}
+
+.bottom-controls {
+  clear: both;
+  position: relative;
+  height: 40px;
+}
+.bottom-controls button {
+  position: absolute;
+  left: 340px;
+}
+.bottom-controls button + button {
+  left: auto;
+  right: 340px;
+}
+.single {
+  margin-bottom: 40px;
+}
+.single a,
+.single img {
+  display: block;
+  width: 320px;
+  margin: 0 auto;
+}
+
+@media all and (max-width: 660px) {
+  body {
+    width: auto;
+    min-width: 240px;
+    padding: 0 40px;
+  }
+  h1, .single, footer {
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+}
+@media all and (max-width: 400px) {
+  body {
+    width: auto;
+    padding: 0;
+  }
+}

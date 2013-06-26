@@ -1,0 +1,11 @@
+/app/config.php
+/public/gifs/*.gif
+/public/css/gif.gg.css
+/public/js/gif.gg.js
+/vendor/
+
+/tmp/*
+!/tmp/.gitkeep
+
+/_assets/
+

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="initial-scale = 1.0">
+		{% spaceless %}
+		<title>{% block title %}gif.gg{% endblock %}</title>
+		{% endspaceless %}
+
+{% block metas %}{% endblock %}
+		<link rel="shortcut icon" href="/favicon.png" type="image/png">
+		<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Droid+Sans:400,700">
+{% if debug %}
+		<link rel="stylesheet" href="/css/index.css">
+{% else %}
+		<link rel="stylesheet" href="/css/gif.gg.css?{{ version }}">
+{% endif %}
+	</head>
+	<body>
+		<h1><a href="/">gif.gg</a></h1>
+{% block content %}{% endblock %}
+{% block footer %}
+		<footer><a href="/about">about</a></footer>
+{% endblock %}
+{% block scripts %}{% endblock %}
+{% if not debug and ga_id is not null %}{% include 'analytics.html' %}{% endif %}
+	</body>
+</html>
