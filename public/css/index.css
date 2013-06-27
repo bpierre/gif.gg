@@ -132,6 +132,9 @@ button {
   width: 320px;
   margin: 0 auto;
 }
+.about {
+  margin-bottom: 40px;
+}
 
 @media all and (max-width: 660px) {
   body {
