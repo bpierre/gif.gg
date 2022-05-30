@@ -5,12 +5,22 @@
 		{% spaceless %}
 		<title>{% block title %}gif.gg{% endblock %}</title>
 		{% endspaceless %}
+		<meta name="viewport" content="initial-scale=1, width=device-width">
 		<link rel="shortcut icon" href="/favicon.png" type="image/png">
 		<style>
+			html, body {
+				height: 100%;
+			}
 			body, img, a {
 				display: block;
 				margin: 0 auto;
 				width: 320px;
+			}
+			img {
+				position: absolute;
+				margin: auto;
+				top: 0;
+				bottom: 0;
 			}
 		</style>
 	</head>
