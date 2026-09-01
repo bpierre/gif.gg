@@ -41,7 +41,11 @@ module.exports = function getPreview(width, height, container, waitCb, startCb, 
   function requestAccess() {
     domutils.getCam(function(stream) {
       waitCb();
-      camVideo.src = URL.createObjectURL(stream);
+      if ('srcObject' in camVideo) {
+        camVideo.srcObject = stream;
+      } else {
+        camVideo.src = URL.createObjectURL(stream);
+      }
     }, function(error) {
       if (error !== 'PERMISSION_DENIED') {
         errorCb();

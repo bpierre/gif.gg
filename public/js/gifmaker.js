@@ -1,5 +1,5 @@
-var EventEmitter = require('events').EventEmitter;
-var GIF = require('./gif').GIF;
+var GIF = require('./gif');
+var EventEmitter = GIF.EventEmitter;
 var domutils = require('./domutils');
 var compat = require('./compat');
 var URL = compat.URL;
@@ -92,4 +92,3 @@ module.exports = function gifMaker(width, height, container, workerScript) {
 
   return gifmaker;
 };
-
