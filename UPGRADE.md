@@ -23,6 +23,11 @@ bun run build
 Create a MySQL dump containing the legacy `gifgg` database and choose a new
 SQLite output path. The output file must not already exist.
 
+Missing or empty legacy IP addresses are stored as SQL `NULL`.
+Existing SQLite databases with a required IP column are upgraded automatically
+on startup in a transaction, preserving records and ID sequencing. Stop older
+app processes before starting the updated server.
+
 ```sh
 bun run migrate:mysql-to-sqlite -- \
   --source /path/to/databases.sql \

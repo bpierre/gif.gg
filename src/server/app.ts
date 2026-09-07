@@ -161,7 +161,7 @@ export function createApp(
       database.insertGif({
         urlId: id,
         private: true,
-        ip: server?.requestIP(request)?.address ?? "",
+        ip: server?.requestIP(request)?.address || null,
         createdAt: new Date().toISOString(),
       });
       metadataStored = true;

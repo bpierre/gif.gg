@@ -88,7 +88,7 @@ function writeDatabase(path: string, records: readonly LegacyGifRecord[]): void 
     database.exec("PRAGMA synchronous = FULL;");
     database.exec(GIF_DATABASE_SCHEMA);
 
-    const insert = database.query<never, [number, string, number, string, string]>(
+    const insert = database.query<never, [number, string, number, string | null, string]>(
       `INSERT INTO gifs (id, url_id, private, ip, created_at)
        VALUES (?, ?, ?, ?, ?)`,
     );
