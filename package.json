@@ -13,6 +13,7 @@
     "serve": "bun run start",
     "cert:dev": "mkdir -p .certs && mkcert -install && mkcert -cert-file .certs/localhost.pem -key-file .certs/localhost-key.pem localhost gif.localhost 127.0.0.1 ::1",
     "cert:dev:if-needed": "test -f .certs/localhost.pem && test -f .certs/localhost-key.pem || bun run cert:dev",
+    "migrate:mysql-to-sqlite": "bun src/migration/mysql-to-sqlite.ts",
     "build": "bun run build:js && bun run build:css",
     "build:js": "bun build src/client/index.ts --outfile public/js/gif.gg.js --target browser --format esm --minify --reject-unresolved && bun build src/client/gif-worker.ts --outfile public/js/gif-worker.js --target browser --format esm --minify --reject-unresolved",
     "build:encoder": "cargo build --manifest-path tools/msf-gif/Cargo.toml --target wasm32-unknown-unknown --release --locked --offline && cp tools/msf-gif/target/wasm32-unknown-unknown/release/gifgg_msf.wasm public/js/msf-gif.wasm",
