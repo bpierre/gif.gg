@@ -90,6 +90,22 @@ describe("Bun backend", () => {
     });
   });
 
+  test("stores NULL when the client IP is unavailable", async () => {
+    const { app } = createTestApp();
+    const form = new FormData();
+    form.append("gif", new File([gifFixture()], "capture.gif", { type: "image/gif" }));
+    const response = await app.fetch(
+      new Request("http://gif.gg/", {
+        method: "POST",
+        body: form,
+      }),
+      { requestIP: () => null },
+    );
+
+    expect(response.status).toBe(200);
+    expect(app.database.findGif("abcdefg")?.ip).toBeNull();
+  });
+
   test("serves the native encoder as WebAssembly", async () => {
     const { app } = createTestApp();
     const response = await app.fetch(new Request("http://gif.gg/js/msf-gif.wasm"));

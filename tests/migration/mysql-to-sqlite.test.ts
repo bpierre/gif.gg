@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { migrateMysqlDump } from "../../src/migration/mysql-to-sqlite";
+import { GifDatabase } from "../../src/server/database";
 
 const temporaryDirectories: string[] = [];
 
@@ -21,6 +22,40 @@ afterEach(() => {
 });
 
 describe("MySQL to SQLite migration", () => {
+  test("normalizes missing IPs to NULL while preserving non-empty values", () => {
+    const directory = temporaryDirectory();
+    const sourcePath = join(directory, "gifgg.sql");
+    const outputPath = join(directory, "gifgg.sqlite");
+    writeFileSync(
+      sourcePath,
+      `INSERT INTO \`gif\` VALUES
+(1,'nullIp',1,NULL,'2020-01-01 00:00:00'),
+(2,'emptyIp',1,'','2020-01-01 00:00:00'),
+(3,'literalIp',1,'NULL','2020-01-01 00:00:00');
+INSERT INTO \`gif\` (\`ip\`,\`id\`,\`url_id\`,\`private\`,\`created\`)
+VALUES (NULL,4,'columnsIp',0,'2020-01-01 00:00:00');`,
+    );
+
+    expect(migrateMysqlDump({ sourcePath, outputPath }).rows).toBe(4);
+
+    const database = new GifDatabase(outputPath);
+    try {
+      expect(database.findGif("nullIp")?.ip).toBeNull();
+      expect(database.findGif("emptyIp")?.ip).toBeNull();
+      expect(database.findGif("literalIp")?.ip).toBe("NULL");
+      expect(database.findGif("columnsIp")?.ip).toBeNull();
+      database.insertGif({
+        urlId: "newNull",
+        private: true,
+        ip: null,
+        createdAt: "2020-01-01T00:00:00.000Z",
+      });
+      expect(database.findGif("newNull")?.ip).toBeNull();
+    } finally {
+      database.close();
+    }
+  });
+
   test("preserves legacy rows and reports missing and orphaned media", () => {
     const directory = temporaryDirectory();
     const sourcePath = join(directory, "all-databases.sql");

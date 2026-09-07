@@ -2,7 +2,7 @@ export interface LegacyGifRecord {
   id: number;
   urlId: string;
   private: boolean;
-  ip: string;
+  ip: string | null;
   createdAt: string;
 }
 
@@ -231,7 +231,7 @@ function toLegacyGifRecord(row: ReadonlyMap<string, SqlValue>): LegacyGifRecord 
     id,
     urlId,
     private: rawPrivate === "1",
-    ip: requiredValue(row, "ip"),
+    ip: row.get("ip") || null,
     createdAt: requiredValue(row, "created"),
   };
 }
