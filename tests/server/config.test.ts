@@ -23,7 +23,6 @@ describe("server configuration", () => {
       DATA_DIR: "./persistent-data",
       NODE_ENV: "production",
       APP_VERSION: "release-42",
-      GA_ID: "analytics-id",
     });
 
     expect(config).toEqual({
@@ -32,7 +31,6 @@ describe("server configuration", () => {
       gifsDir: resolve("./persistent-data/gifs"),
       debug: false,
       version: "release-42",
-      googleAnalyticsId: "analytics-id",
     });
   });
 });

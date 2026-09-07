@@ -4,7 +4,7 @@ import {
   generateLegacyId,
   type InclusiveRandomInteger,
   LEGACY_ID_CHARACTERS,
-} from "../../src/id/legacy-id";
+} from "./legacy-id.fixture";
 
 function sequenceRandom(
   values: readonly number[],

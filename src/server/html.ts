@@ -1,8 +1,6 @@
 export interface HtmlConfig {
   debug: boolean;
   version: string;
-  googleAnalyticsId?: string;
-  googleAnalyticsName?: string;
 }
 
 function escapeHtml(value: string): string {
@@ -12,24 +10,6 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll("\"", "&quot;")
     .replaceAll("'", "&#39;");
-}
-
-function analytics(config: HtmlConfig): string {
-  if (config.debug || !config.googleAnalyticsId) {
-    return "";
-  }
-
-  const id = JSON.stringify(config.googleAnalyticsId);
-  const name = JSON.stringify(config.googleAnalyticsName ?? "auto");
-
-  return `<script>
-(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-ga('create', ${id}, ${name});
-ga('send', 'pageview');
-</script>`;
 }
 
 function layout(
@@ -56,7 +36,6 @@ function layout(
   ${options.content ?? ""}
   <footer><a href="/about">about</a></footer>
   ${options.scripts ?? ""}
-  ${analytics(config)}
 </body>
 </html>`;
 }
@@ -99,7 +78,7 @@ export function renderGif(config: HtmlConfig, id: string): string {
   });
 }
 
-export function renderTwitterPlayer(config: HtmlConfig, id: string): string {
+export function renderTwitterPlayer(id: string): string {
   const escapedId = escapeHtml(id);
   const gifUrl = `/${escapedId}.gif`;
 
@@ -118,7 +97,6 @@ export function renderTwitterPlayer(config: HtmlConfig, id: string): string {
 </head>
 <body>
   <a href="https://gif.gg/${escapedId}" target="_blank"><img src="${gifUrl}" alt=""></a>
-  ${analytics(config)}
 </body>
 </html>`;
 }

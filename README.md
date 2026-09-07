@@ -5,18 +5,10 @@
 - Bun 1.4+
 - `mkcert` for local development
 
-## Installation
-
-Install the pinned development dependencies and build the browser assets:
+## Development
 
 ```sh
 bun install --frozen-lockfile
-bun run build
-```
-
-Start the development server:
-
-```sh
 bun run dev
 ```
 
@@ -24,26 +16,13 @@ Development defaults to `/tmp/gifgg-development`. The server creates
 `gifgg.sqlite` and a `gifs/` directory there. Set `DATA_DIR` to use another
 external location.
 
-Production requires an explicit persistent directory:
-
-```sh
-NODE_ENV=production DATA_DIR=/absolute/path/to/gifgg-data bun run start
-```
-
-The server listens on port `3000` by default. Set `PORT` to override it. `bun
-serve` is also available as an alias for `bun run start`.
-
-## Development
-
-Run the HTTPS development server with automatic restarts:
-
-```sh
-bun run dev
-```
-
 The first run uses `mkcert` to install a local certificate authority and create
 a certificate. Then open <https://gif.localhost:3000>. Run `bun run cert:dev`
 to regenerate the certificate if needed.
+
+Dev builds the browser assets on startup, rebuilds client/worker/CSS changes,
+and restarts the server when its source changes. Refresh the browser to see edits.
+Stopping dev stops its watchers too.
 
 Format the repository with `bun run format`. Run formatting checks, type checks,
 tests, and the production frontend build with `bun run check`.
@@ -54,6 +33,19 @@ included; normal builds need no native toolchain. Pinned source, licensing,
 and optional rebuild instructions are in [tools/msf-gif](tools/msf-gif/README.md).
 
 See [UPGRADE.md](UPGRADE.md) for the legacy MySQL-to-SQLite migration procedure.
+
+## Production
+
+Build the browser assets, then start with an explicit persistent directory:
+
+```sh
+bun install --frozen-lockfile
+bun run build
+NODE_ENV=production DATA_DIR=/absolute/path/to/gifgg-data bun run start
+```
+
+Production serves HTTP behind your TLS reverse proxy. The default port is `3000`;
+set `PORT` to override it.
 
 ## Uploads
 

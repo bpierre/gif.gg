@@ -3,7 +3,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { InclusiveRandomInteger } from "../../src/id/legacy-id";
+import type { InclusiveRandomInteger } from "../../src/id/alphabet";
 import { createApp, type GifApp } from "../../src/server/app";
 import type { AppConfig } from "../../src/server/config";
 import { MAX_UPLOAD_BODY_BYTES, UPLOAD_LIMITS } from "../../src/shared/upload-policy";

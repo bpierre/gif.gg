@@ -2,8 +2,8 @@ import { randomInt } from "node:crypto";
 import { existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
+import type { InclusiveRandomInteger } from "../id/alphabet";
 import { generateId } from "../id/generate-id";
-import type { InclusiveRandomInteger } from "../id/legacy-id";
 import {
   MAX_UPLOAD_BODY_BYTES,
   UPLOAD_LIMITS,
@@ -224,7 +224,7 @@ export function createApp(
           ID_PATTERN.test(id)
           && existsSync(join(config.gifsDir, `${id}.gif`))
         ) {
-          return html(renderTwitterPlayer(config, id));
+          return html(renderTwitterPlayer(id));
         }
 
         return html(renderError(config, 404), 404);

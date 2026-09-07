@@ -7,8 +7,6 @@ export interface AppConfig {
   gifsDir: string;
   debug: boolean;
   version: string;
-  googleAnalyticsId?: string;
-  googleAnalyticsName?: string;
 }
 
 export function loadConfig(
@@ -24,8 +22,6 @@ export function loadConfig(
   const dataDir = resolve(
     configuredDataDir || join(tmpdir(), "gifgg-development"),
   );
-  const googleAnalyticsId = environment.GA_ID?.trim();
-  const googleAnalyticsName = environment.GA_NAME?.trim();
 
   return {
     dataDir,
@@ -33,7 +29,5 @@ export function loadConfig(
     gifsDir: join(dataDir, "gifs"),
     debug: !production,
     version: environment.APP_VERSION?.trim() || "1",
-    ...(googleAnalyticsId ? { googleAnalyticsId } : {}),
-    ...(googleAnalyticsName ? { googleAnalyticsName } : {}),
   };
 }

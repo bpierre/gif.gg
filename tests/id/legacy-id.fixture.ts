@@ -1,10 +1,9 @@
-export const LEGACY_ID_CHARACTERS =
-  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+import {
+  ID_CHARACTERS as LEGACY_ID_CHARACTERS,
+  type InclusiveRandomInteger,
+} from "../../src/id/alphabet";
 
-export type InclusiveRandomInteger = (
-  minimumInclusive: number,
-  maximumInclusive: number,
-) => number;
+export { type InclusiveRandomInteger, LEGACY_ID_CHARACTERS };
 
 export interface LegacyIdOptions {
   randomInteger: InclusiveRandomInteger;
