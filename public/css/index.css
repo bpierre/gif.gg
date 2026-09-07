@@ -6,7 +6,7 @@ body {
   background: white;
 }
 body, button {
-  font: 16px 'Droid sans', sans-serif;
+  font: 16px "Droid sans", sans-serif;
   text-transform: lowercase;
 }
 h1 {
@@ -41,6 +41,47 @@ footer {
   padding-top: 60px;
   line-height: 40px;
 }
+.screens.has-error .gif-preview {
+  display: none;
+}
+.preview-error {
+  box-sizing: border-box;
+  float: right;
+  width: 320px;
+  height: 240px;
+  padding: 20px;
+  color: white;
+  background: black;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.preview-error[hidden] {
+  display: none;
+}
+.preview-error h2 {
+  font-size: 20px;
+  margin: 0 0 12px;
+}
+.preview-error p {
+  margin: 0 0 16px;
+}
+.preview-error-actions {
+  display: flex;
+  gap: 12px;
+}
+.preview-error-actions button {
+  font-size: 16px;
+}
+.error-playground {
+  clear: both;
+  margin: 24px 0;
+}
+.error-playground button {
+  font-size: 16px;
+  margin: 4px;
+}
 .progress {
   position: absolute;
   top: 10px;
@@ -58,9 +99,17 @@ button {
   cursor: pointer;
 }
 .shot-button {
+  position: relative;
   float: left;
   width: 320px;
   margin: 20px 0 40px;
+}
+.capture-limit {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  margin: 0;
 }
 .shot-button button {
   vertical-align: middle;

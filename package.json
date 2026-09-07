@@ -1,0 +1,32 @@
+{
+  "name": "gif.gg",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.0",
+  "engines": {
+    "bun": ">=1.4.0"
+  },
+  "scripts": {
+    "dev": "bun run cert:dev:if-needed && bun --watch src/dev/index.ts",
+    "dev:https": "bun run dev",
+    "start": "bun src/server/index.ts",
+    "serve": "bun run start",
+    "cert:dev": "mkdir -p .certs && mkcert -install && mkcert -cert-file .certs/localhost.pem -key-file .certs/localhost-key.pem localhost gif.localhost 127.0.0.1 ::1",
+    "cert:dev:if-needed": "test -f .certs/localhost.pem && test -f .certs/localhost-key.pem || bun run cert:dev",
+    "build": "bun run build:js && bun run build:css",
+    "build:js": "bun build src/client/index.ts --outfile public/js/gif.gg.js --target browser --format esm --minify --reject-unresolved && bun build src/client/gif-worker.ts --outfile public/js/gif-worker.js --target browser --format esm --minify --reject-unresolved",
+    "build:encoder": "cargo build --manifest-path tools/msf-gif/Cargo.toml --target wasm32-unknown-unknown --release --locked --offline && cp tools/msf-gif/target/wasm32-unknown-unknown/release/gifgg_msf.wasm public/js/msf-gif.wasm",
+    "build:css": "bun build public/css/index.css --outfile public/css/gif.gg.css --target browser --minify",
+    "clean": "rm -f public/js/gif.gg.js public/js/gif-worker.js public/css/gif.gg.css",
+    "format": "dprint fmt",
+    "format:check": "dprint check",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "check": "bun run format:check && bun run typecheck && bun run build && bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.0",
+    "dprint": "0.54.0",
+    "typescript": "7.0.2"
+  }
+}

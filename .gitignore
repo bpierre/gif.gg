@@ -2,10 +2,13 @@
 /public/gifs/*.gif
 /public/css/gif.gg.css
 /public/js/gif.gg.js
+/public/js/gif-worker.js
+/tools/msf-gif/target/
 /vendor/
+/node_modules/
+/.certs/
 
 /tmp/*
 !/tmp/.gitkeep
 
 /_assets/
-

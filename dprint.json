@@ -1,0 +1,37 @@
+{
+  "$schema": "https://dprint.dev/schemas/v0.json",
+  "incremental": false,
+  "lineWidth": 100,
+  "typescript": {
+    "quoteStyle": "alwaysDouble",
+    "semiColons": "always"
+  },
+  "json": {},
+  "markdown": {},
+  "markup": {},
+  "malva": {},
+  "ruff": {},
+  "includes": [
+    "**/*.{ts,js,json,jsonc,md,html,css,py}",
+    "bun.lock"
+  ],
+  "excludes": [
+    "**/node_modules/**",
+    "app/config.php",
+    "log/**",
+    "public/css/gif.gg.css",
+    "public/js/gif.gg.js",
+    "public/js/gif-worker.js",
+    "tools/msf-gif/target/**",
+    "public/js/*.map",
+    "vendor/**"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.96.1.wasm",
+    "https://plugins.dprint.dev/json-0.23.0.wasm",
+    "https://plugins.dprint.dev/markdown-0.23.3.wasm",
+    "https://plugins.dprint.dev/g-plane/markup_fmt-v0.27.3.wasm",
+    "https://plugins.dprint.dev/g-plane/malva-v0.16.0.wasm",
+    "https://plugins.dprint.dev/ruff-0.8.5.wasm"
+  ]
+}
