@@ -6,17 +6,15 @@ rust-version = "1.89"
 publish = false
 
 [dependencies]
-axum = { version = "0.8", features = ["multipart"] }
-axum-server = { version = "0.7", features = ["tls-rustls-no-provider"] }
-rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "multipart", "tokio"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time", "fs", "io-util"] }
 rusqlite = { version = "0.32", features = ["bundled"] }
-rand = "0.8"
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
+rand = { version = "0.8", default-features = false, features = ["getrandom"] }
+chrono = { version = "0.4", default-features = false, features = ["now"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-futures-util = "0.3"
-mime_guess = "2"
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+mime_guess = { version = "2", default-features = false }
 tokio-util = { version = "0.7", features = ["io"] }
 socket2 = "0.6"
 

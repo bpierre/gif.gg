@@ -59,11 +59,10 @@ async function holdUpload(url: string): Promise<Socket> {
   });
 }
 
-async function rustServer(dataDir: string, production = false, developmentTls = false) {
+async function rustServer(dataDir: string, production = false) {
   const port = freePort();
   const process = Bun.spawn([
     join(project, "server/target/debug/gifgg-server"),
-    ...(developmentTls ? ["--dev"] : []),
   ], {
     cwd: project,
     env: {
@@ -77,14 +76,14 @@ async function rustServer(dataDir: string, production = false, developmentTls = 
     stderr: "pipe",
   });
   processes.push(process);
-  const url = `${developmentTls ? "https" : "http"}://127.0.0.1:${port}`;
+  const url = `http://127.0.0.1:${port}`;
   const deadline = Date.now() + 10_000;
   while (Date.now() < deadline) {
     if (process.exitCode !== null) {
       throw new Error(`Rust server exited: ${await new Response(process.stderr).text()}`);
     }
     try {
-      const response = await fetch(url, { tls: { rejectUnauthorized: false } });
+      const response = await fetch(url);
       await response.arrayBuffer();
       return { url, process };
     } catch {

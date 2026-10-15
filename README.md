@@ -3,8 +3,7 @@
 ## Requirements
 
 - Bun 1.4+
-- Rust 1.89+ and a C compiler (for bundled SQLite and TLS dependencies)
-- `mkcert` for local development
+- Rust 1.89+ and a C compiler (for bundled SQLite)
 
 ## Development
 
@@ -13,17 +12,26 @@ bun install --frozen-lockfile
 bun run dev
 ```
 
-Development defaults to `/tmp/gifgg-development`. The server creates
-`gifgg.sqlite` and a `gifs/` directory there. Set `DATA_DIR` to use another
-external location.
+`dev` builds and watches the browser assets (client, worker, and CSS). Refresh the
+browser after changes. The application server is a single HTTP binary; Nix manages
+the local service and Nginx proxy, and Nginx handles production TLS.
 
-The first run uses `mkcert` to install a local certificate authority and create
-a certificate. Then open <https://gif.localhost:3000>. Run `bun run cert:dev`
-to regenerate the certificate if needed.
+The neighboring `ubuntu-2022/nixos` configuration exposes the local VM at
+<http://gifgg.localhost:8080>. Its gif.gg package must be updated from the old Bun
+source pin to this Rust version before it can run this branch. Browser asset
+watching here does not update a packaged Nix service; rebuild its package/VM to
+test source changes there.
 
-Dev builds the browser assets and Rust server on startup, rebuilds client/worker/CSS changes,
-and rebuilds and restarts the server when its source or templates change. Refresh the browser to see edits.
-Stopping dev stops its watchers too.
+For a standalone local run, build and start the same HTTP binary:
+
+```sh
+bun run build
+bun run start
+```
+
+Then open <http://localhost:3000>. Without `NODE_ENV=production`, data defaults to
+`/tmp/gifgg-development`; set `DATA_DIR` to override it. The server creates
+`gifgg.sqlite` and a `gifs/` directory there.
 
 Format the repository with `bun run format`. Run formatting checks, type checks,
 tests, Rust lint checks, and the production build with `bun run check`.
@@ -69,7 +77,7 @@ A notice appears below the controls; the preview and Save remain available.
 This is an estimate, not a guarantee. Server validation rejects oversized GIFs if
 the estimate misses; reset to make a smaller GIF.
 
-In development, open <https://gif.localhost:3000/?upload-errors> to preview the four
+Outside production mode, open <http://localhost:3000/?upload-errors> to preview the four
 error categories in place of the GIF preview. Temporary errors offer "retry save" to save the
 same GIF; validation errors require a reset. In the playground, "retry save" only
 clears the error. No camera permission is needed and no uploads are sent.

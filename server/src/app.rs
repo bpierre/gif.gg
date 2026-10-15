@@ -168,7 +168,7 @@ impl App {
         let id;
         {
             let database = self.database.lock().map_err(|_| UploadError::Internal)?;
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rngs::OsRng;
             id = generate_id(
                 || rng.gen_range(0..ALPHABET.len()),
                 |candidate| {
@@ -281,17 +281,15 @@ fn upload_failure(error: UploadError) -> Response {
         UploadError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         _ => StatusCode::UNPROCESSABLE_ENTITY,
     };
-    let mut response = (
+    (
         status,
-        [(header::CACHE_CONTROL, "no-store")],
-        axum::Json(serde_json::json!({ "error": error })),
+        [
+            (header::CACHE_CONTROL, "no-store"),
+            (header::CONTENT_TYPE, "application/json;charset=utf-8"),
+        ],
+        serde_json::json!({ "error": error }).to_string(),
     )
-        .into_response();
-    response.headers_mut().insert(
-        header::CONTENT_TYPE,
-        "application/json;charset=utf-8".parse().unwrap(),
-    );
-    response
+        .into_response()
 }
 
 async fn read_upload(request: Request) -> Result<Vec<u8>, UploadError> {

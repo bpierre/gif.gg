@@ -45,11 +45,9 @@ fn parse_port(value: &str) -> Option<u16> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let development = match std::env::args().nth(1).as_deref() {
-        None => false,
-        Some("--dev") => true,
-        _ => return Err("usage: gifgg-server [--dev]".into()),
-    };
+    if std::env::args().len() != 1 {
+        return Err("usage: gifgg-server".into());
+    }
     let config = Config::from_env()?;
     // A deployed binary can have public/ beside it. In the source checkout,
     // resolve assets relative to the source.
@@ -65,37 +63,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::new(config, public_dir)?.router();
     let port = parse_port(&std::env::var("PORT").unwrap_or_else(|_| "3000".into()))
         .ok_or("PORT must be an integer between 1 and 65535")?;
-    if development {
-        let certificate = PathBuf::from(".certs/localhost.pem");
-        let key = PathBuf::from(".certs/localhost-key.pem");
-        if !certificate.exists() || !key.exists() {
-            return Err("development certificate is missing; run `bun run cert:dev`".into());
-        }
-        rustls::crypto::ring::default_provider()
-            .install_default()
-            .map_err(|_| "install TLS provider")?;
-        let tls = axum_server::tls_rustls::RustlsConfig::from_pem_file(certificate, key).await?;
-        let handle = axum_server::Handle::new();
-        let shutdown_handle = handle.clone();
-        tokio::spawn(async move {
-            shutdown().await;
-            shutdown_handle.graceful_shutdown(None);
-        });
-        println!("gif.gg development server listening on https://localhost:{port}/");
-        axum_server::from_tcp_rustls(listener::bind(port)?, tls)
-            .handle(handle)
-            .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-            .await?;
-    } else {
-        let listener = tokio::net::TcpListener::from_std(listener::bind(port)?)?;
-        println!("gif.gg listening on http://localhost:{port}/");
-        axum::serve(
-            listener,
-            app.into_make_service_with_connect_info::<SocketAddr>(),
-        )
-        .with_graceful_shutdown(shutdown())
-        .await?;
-    }
+    let listener = tokio::net::TcpListener::from_std(listener::bind(port)?)?;
+    println!("gif.gg listening on http://localhost:{port}/");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown())
+    .await?;
     Ok(())
 }
 
