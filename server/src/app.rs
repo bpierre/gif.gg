@@ -45,7 +45,7 @@ impl App {
     }
 
     pub fn router(self) -> Router {
-        // Dispatch explicitly to retain the old 404s for HEAD/unsupported methods,
+        // Dispatch explicitly to retain the old 404s for unsupported methods,
         // encoded paths, and the restricted public-file allowlist.
         Router::new()
             .fallback(handle)
@@ -58,14 +58,15 @@ impl App {
         request: Request,
     ) -> Result<Response, Box<dyn std::error::Error + Send + Sync>> {
         if oversized_content_length(&request) {
-            return Ok(oversized_body());
+            return Ok(upload_failure(UploadError::TooLarge));
         }
-        let path = normalize_path(request.uri().path());
+        let path = request.uri().path();
         let range = request
             .headers()
             .get(header::RANGE)
+            .filter(|_| request.method() == Method::GET)
             .and_then(|value| value.to_str().ok());
-        let get = request.method() == Method::GET;
+        let get = matches!(*request.method(), Method::GET | Method::HEAD);
         if get && path == "/" {
             return Ok(html_response(html::main_page(&self.config), 200));
         }
@@ -75,7 +76,7 @@ impl App {
         if get && path == "/about" {
             return Ok(html_response(html::about(&self.config), 200));
         }
-        if get && (path == "/favicon.png" || public_path(&path)) {
+        if get && (path == "/favicon.png" || public_path(path)) {
             return Ok(
                 existing_file(&self.public_dir.join(&path[1..]), self.config.debug, range)
                     .await?
@@ -136,7 +137,6 @@ impl App {
             .map(|value| value.0.ip().to_string());
         let bytes = match read_upload(request).await {
             Ok(bytes) => bytes,
-            Err(UploadError::TooLarge) => return oversized_body(),
             Err(error) => return upload_failure(error),
         };
         let app = self.clone();
@@ -221,39 +221,6 @@ fn valid_id(id: &str) -> bool {
     !id.is_empty() && id.bytes().all(|byte| byte.is_ascii_alphanumeric())
 }
 
-// URL.pathname in the Bun app uses WHATWG dot-segment/backslash normalization,
-// including percent-encoded dots, without decoding ordinary path characters.
-fn normalize_path(path: &str) -> String {
-    let path = path.replace('\\', "/");
-    let mut segments = Vec::new();
-    let parts: Vec<_> = path.split('/').collect();
-    for (index, part) in parts.iter().enumerate() {
-        let dots = part.to_ascii_lowercase().replace("%2e", ".");
-        match dots.as_str() {
-            "." => {
-                if index == parts.len() - 1 {
-                    segments.push("");
-                }
-            }
-            ".." => {
-                if segments.len() > 1 {
-                    segments.pop();
-                }
-                if index == parts.len() - 1 {
-                    segments.push("");
-                }
-            }
-            _ => segments.push(part),
-        }
-    }
-    let normalized = segments.join("/");
-    if normalized.is_empty() {
-        "/".into()
-    } else {
-        normalized
-    }
-}
-
 fn public_path(path: &str) -> bool {
     path.strip_prefix("/css/")
         .or_else(|| path.strip_prefix("/js/"))
@@ -293,9 +260,6 @@ fn upload_failure(error: UploadError) -> Response {
 }
 
 async fn read_upload(request: Request) -> Result<Vec<u8>, UploadError> {
-    if oversized_content_length(&request) {
-        return Err(UploadError::TooLarge);
-    }
     let (parts, body) = request.into_parts();
     let read = async {
         let mut stream = body.into_data_stream();
@@ -322,17 +286,8 @@ async fn read_upload(request: Request) -> Result<Vec<u8>, UploadError> {
         .await
         .map_err(|_| UploadError::Invalid)?
     {
-        let disposition = field
-            .headers()
-            .get(header::CONTENT_DISPOSITION)
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or("");
-        let form_data = disposition
-            .split(';')
-            .next()
-            .is_some_and(|value| value.trim().eq_ignore_ascii_case("form-data"));
-        if form_data && form_parameter(disposition, "name") == Some("gif") {
-            if gif.is_some() || form_parameter(disposition, "filename").is_none() {
+        if field.name() == Some("gif") {
+            if gif.is_some() || field.file_name().is_none() {
                 return Err(UploadError::Invalid);
             }
             gif = Some(
@@ -350,31 +305,6 @@ async fn read_upload(request: Request) -> Result<Vec<u8>, UploadError> {
     Ok(bytes)
 }
 
-// Bun's FormData parser treats an unquoted name as extending to the next quote
-// or end of the header (including subsequent parameters). Multer is more liberal.
-// Inspect the disposition to retain Bun's field selection and file detection.
-fn form_parameter<'a>(header: &'a str, name: &str) -> Option<&'a str> {
-    let mut quoted = false;
-    for (index, character) in header.char_indices() {
-        if character == '"' {
-            quoted = !quoted;
-        }
-        if character == ';' && !quoted {
-            let parameter = header[index + 1..].trim_start();
-            if parameter
-                .get(..name.len())
-                .is_some_and(|key| key.eq_ignore_ascii_case(name))
-            {
-                if let Some(value) = parameter[name.len()..].strip_prefix('=') {
-                    let value = value.strip_prefix('"').unwrap_or(value);
-                    return Some(value.split('"').next().unwrap_or(""));
-                }
-            }
-        }
-    }
-    None
-}
-
 fn oversized_content_length(request: &Request) -> bool {
     request
         .headers()
@@ -382,18 +312,6 @@ fn oversized_content_length(request: &Request) -> bool {
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.parse::<u64>().ok())
         .is_some_and(|length| length > validation::MAX_BODY_BYTES as u64)
-}
-
-fn oversized_body() -> Response {
-    // Bun.serve's maxRequestBodySize rejects the whole request before the app's
-    // JSON error handling, with an empty 413 and Connection: close.
-    let stream = futures_util::stream::empty::<Result<axum::body::Bytes, std::io::Error>>();
-    let mut response = Response::new(Body::from_stream(stream));
-    *response.status_mut() = StatusCode::PAYLOAD_TOO_LARGE;
-    response
-        .headers_mut()
-        .insert(header::CONNECTION, "close".parse().unwrap());
-    response
 }
 
 // Bun serves one valid byte range, ignores malformed/multiple ranges, and emits

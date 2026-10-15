@@ -2,6 +2,7 @@ import { Database } from "bun:sqlite";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { get as httpGet } from "node:http";
 import { createConnection, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -147,15 +148,30 @@ async function expectHtml(
   production: boolean,
   name: string,
   status = 200,
-  head = false,
 ) {
   const expected = baseline.html[`${production ? "production" : "development"}/${name}`]!;
   expect(response.status).toBe(status);
   expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
   expect(response.headers.get("content-length")).toBe(String(expected.bytes));
   const bytes = new Uint8Array(await response.arrayBuffer());
-  if (head) expect(bytes.length).toBe(0);
-  else expect(sha256(bytes)).toBe(expected.sha256);
+  expect(sha256(bytes)).toBe(expected.sha256);
+}
+
+async function expectHead(response: Response, head: Response) {
+  expect(head.status).toBe(response.status);
+  for (
+    const name of [
+      "content-type",
+      "content-length",
+      "cache-control",
+      "x-content-type-options",
+      "content-range",
+      "accept-ranges",
+    ]
+  ) {
+    expect(head.headers.get(name)).toBe(response.headers.get(name));
+  }
+  expect((await head.arrayBuffer()).byteLength).toBe(0);
 }
 
 async function expectUploadError(response: Response, error: string, status = 422) {
@@ -194,10 +210,11 @@ describe("Rust backend", () => {
         "/metadataOnly": "metadataOnly",
         "/twitter-player/a0": "playerA0",
         "/twitter-player/orphan": "playerOrphan",
-        "/%2e%2e/about": "about",
       };
       for (const [path, name] of Object.entries(pages)) {
-        await expectHtml(await fetch(server.url + path), production, name);
+        const response = await fetch(server.url + path);
+        await expectHtml(response, production, name);
+        await expectHead(response, await fetch(server.url + path, { method: "HEAD" }));
       }
       for (
         const path of [
@@ -215,16 +232,17 @@ describe("Rust backend", () => {
           "/a0.gif/",
         ]
       ) {
-        await expectHtml(await fetch(server.url + path), production, "error", 404);
+        const response = await fetch(server.url + path);
+        await expectHtml(response, production, "error", 404);
+        await expectHead(response, await fetch(server.url + path, { method: "HEAD" }));
       }
-      for (const method of ["HEAD", "PUT", "DELETE", "OPTIONS", "PATCH"]) {
+      for (const method of ["PUT", "DELETE", "OPTIONS", "PATCH"]) {
         for (const path of ["/", "/about", "/a0", "/a0.gif", "/js/msf-gif.wasm"]) {
           await expectHtml(
             await fetch(server.url + path, { method }),
             production,
             "error",
             404,
-            method === "HEAD",
           );
         }
       }
@@ -246,6 +264,10 @@ describe("Rust backend", () => {
         expect(new Uint8Array(await response.arrayBuffer())).toEqual(
           new Uint8Array(readFileSync(join(project, "public", path))),
         );
+        await expectHead(
+          response,
+          await fetch(server.url + path + "?version=1", { method: "HEAD" }),
+        );
       }
       for (
         const path of [
@@ -253,7 +275,6 @@ describe("Rust backend", () => {
           "/gifs/a0.gif",
           "/orphan.gif",
           "/gifs/orphan.gif",
-          "/gifs/../a0.gif",
         ]
       ) {
         const response = await fetch(server.url + path);
@@ -262,13 +283,44 @@ describe("Rust backend", () => {
         expect(response.headers.get("cache-control")).toBeNull();
         expect(response.headers.get("x-content-type-options")).toBe("nosniff");
         expect(new Uint8Array(await response.arrayBuffer())).toEqual(gifFixture());
+        await expectHead(response, await fetch(server.url + path, { method: "HEAD" }));
       }
     }
   }, 30_000);
 
+  test("matches literal request paths without normalizing URL aliases", async () => {
+    const server = await rustServer(directory());
+    for (
+      const path of [
+        "/foo/../about",
+        "/%2e%2e/about",
+        "/foo\\..\\about",
+        "/css/../css/index.css",
+        "/js/../js/msf-gif.wasm",
+      ]
+    ) {
+      // fetch normalizes dot segments before sending; node:http preserves them.
+      const response = await new Promise<{ status: number | undefined; body: string; }>(
+        (resolve, reject) => {
+          httpGet(server.url, { path }, (response) => {
+            response.setEncoding("utf8");
+            let body = "";
+            response.on("data", (chunk) => body += chunk);
+            response.on("end", () => resolve({ status: response.statusCode, body }));
+            response.on("error", reject);
+          }).on("error", reject);
+        },
+      );
+      expect(response.status).toBe(404);
+      expect(sha256(response.body)).toBe(baseline.html["development/error"]!.sha256);
+    }
+  });
+
   test("preserves file byte ranges and malformed-range behavior", async () => {
     const server = await rustServer(directory());
     const wasm = new Uint8Array(readFileSync(join(project, "public/js/msf-gif.wasm")));
+    const full = await fetch(server.url + "/js/msf-gif.wasm");
+    await full.arrayBuffer();
     const cases: [string, [number, number] | "invalid" | "ignored"][] = [
       ["bytes=0-10", [0, 10]],
       ["bytes=10-", [10, wasm.length - 1]],
@@ -283,6 +335,11 @@ describe("Rust backend", () => {
       ["bytes=-999999", [0, wasm.length - 1]],
     ];
     for (const [range, expected] of cases) {
+      // Range is defined for GET only; HEAD always describes the full resource.
+      await expectHead(
+        full,
+        await fetch(server.url + "/js/msf-gif.wasm", { method: "HEAD", headers: { range } }),
+      );
       const response = await fetch(server.url + "/js/msf-gif.wasm", { headers: { range } });
       expect(response.status).toBe(
         expected === "ignored" ? 200 : expected === "invalid" ? 416 : 206,
@@ -308,27 +365,24 @@ describe("Rust backend", () => {
     }
   });
 
-  test("preserves multipart field selection and file detection", async () => {
+  test("selects the GIF file using parsed multipart fields", async () => {
     const server = await rustServer(directory());
-    const dispositions = [
-      "form-data; name=\"gif\"; filename=\"capture.gif\"",
-      "form-data; name=gif; filename=capture.gif",
-      "form-data; name=\"gif\"; filename=capture.gif",
-      "form-data; filename=\"capture.gif\"; name=gif",
-      "FORM-DATA; NAME=\"gif\"; FILENAME=\"capture.gif\"",
-      "form-data; name=\"gif\"; filename=\"\"",
-      "form-data; name=\"gif\"; filename=\"a/b.gif\"",
-      "form-data; name=\"gif\"; filename*=UTF-8''capture.gif",
-      "form-data; name=\"gif\"",
-      "form-data; name=\"GIF\"; filename=\"capture.gif\"",
-      "attachment; name=\"gif\"; filename=\"capture.gif\"",
+    const dispositions: [string, boolean][] = [
+      ["form-data; name=\"gif\"; filename=\"capture.gif\"", true],
+      ["form-data; name=gif; filename=capture.gif", true],
+      ["form-data; name=\"gif\"; filename=capture.gif", true],
+      ["form-data; filename=\"capture.gif\"; name=gif", true],
+      ["form-data; name = gif; filename = capture.gif", true],
+      ["form-data; name=\"gif\"; filename=\"\"", true],
+      ["form-data; name=\"gif\"; filename=\"a/b.gif\"", true],
+      ["form-data; name=\"gif\"; filename*=UTF-8''capture.gif", false],
+      ["form-data; name=\"gif\"", false],
+      ["form-data; name=\"GIF\"; filename=\"capture.gif\"", false],
     ];
-    for (let index = 0; index < dispositions.length; index++) {
+    for (const [disposition, accepted] of dispositions) {
       for (const ending of ["\r\n--test--\r\n", "\r\n--test--", "", "\r\n--test--\r\nepilogue"]) {
         const body = new Blob([
-          `--test\r\nContent-Disposition: ${
-            dispositions[index]
-          }\r\nContent-Type: image/gif\r\n\r\n`,
+          `--test\r\nContent-Disposition: ${disposition}\r\nContent-Type: image/gif\r\n\r\n`,
           gifFixture(),
           ending,
         ]);
@@ -337,7 +391,7 @@ describe("Rust backend", () => {
           headers: { "content-type": "multipart/form-data; boundary=\"test\"" },
           body,
         });
-        if ([0, 2, 3, 4, 5, 6].includes(index) && ending !== "") {
+        if (accepted && ending !== "") {
           expect(response.status).toBe(200);
           expect(await response.text()).toMatch(/^\/[a-zA-Z0-9]{7}$/);
         } else await expectUploadError(response, "invalid");
@@ -421,21 +475,32 @@ describe("Rust backend", () => {
     30_000,
   );
 
-  test("bounds chunked request bodies", async () => {
-    const server = await rustServer(directory());
-    const response = await fetch(server.url, {
-      method: "POST",
-      headers: { "content-type": "multipart/form-data; boundary=test" },
-      body: new ReadableStream({
-        start(controller) {
-          controller.enqueue(new Uint8Array(MAX_UPLOAD_BODY_BYTES + 1));
-          controller.close();
-        },
-      }),
-    });
-    expect(response.status).toBe(413);
-    expect(response.headers.get("content-type")).toBeNull();
-    expect(await response.text()).toBe("");
+  test("rejects declared and chunked oversized bodies with the upload error format", async () => {
+    const dataDir = directory();
+    const server = await rustServer(dataDir);
+    const bytes = new Uint8Array(MAX_UPLOAD_BODY_BYTES + 1);
+    for (
+      const body of [
+        bytes,
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(bytes);
+            controller.close();
+          },
+        }),
+      ]
+    ) {
+      await expectUploadError(
+        await fetch(server.url, {
+          method: "POST",
+          headers: { "content-type": "multipart/form-data; boundary=test" },
+          body,
+        }),
+        "too_large",
+        413,
+      );
+      expect(readdirSync(join(dataDir, "gifs"))).toEqual([]);
+    }
   });
 
   test("keeps pages available while uploads are busy and releases canceled upload slots", async () => {

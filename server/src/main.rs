@@ -19,28 +19,7 @@ async fn shutdown() {
 }
 
 fn parse_port(value: &str) -> Option<u16> {
-    let value = value.trim();
-    let prefixed = [
-        ("0x", 16),
-        ("0X", 16),
-        ("0o", 8),
-        ("0O", 8),
-        ("0b", 2),
-        ("0B", 2),
-    ];
-    let number = if let Some((prefix, radix)) = prefixed
-        .iter()
-        .find(|(prefix, _)| value.starts_with(prefix))
-    {
-        u64::from_str_radix(&value[prefix.len()..], *radix).ok()? as f64
-    } else {
-        value.parse::<f64>().ok()?
-    };
-    if number.is_finite() && number.fract() == 0.0 && (1.0..=65535.0).contains(&number) {
-        Some(number as u16)
-    } else {
-        None
-    }
+    value.trim().parse::<u16>().ok().filter(|port| *port != 0)
 }
 
 #[tokio::main]
@@ -79,13 +58,27 @@ mod tests {
     use super::*;
 
     #[test]
-    fn port_retains_javascript_number_formats_and_bounds() {
-        for value in [
-            "3000", " 3000 ", "3e3", "3000.0", "+3000", "0xBB8", "0o5670",
-        ] {
+    fn port_accepts_decimal_integers_in_bounds() {
+        for value in ["3000", " 3000 ", "+3000", "03000"] {
             assert_eq!(parse_port(value), Some(3000), "{value}");
         }
-        for value in ["", "0", "65536", "-1", "1.5", "NaN", "Infinity", "port"] {
+        assert_eq!(parse_port("1"), Some(1));
+        assert_eq!(parse_port("65535"), Some(65535));
+        for value in [
+            "",
+            "0",
+            "65536",
+            "-1",
+            "1.5",
+            "NaN",
+            "Infinity",
+            "port",
+            "3e3",
+            "3000.0",
+            "0xBB8",
+            "0o5670",
+            "0b101110111000",
+        ] {
             assert_eq!(parse_port(value), None, "{value}");
         }
     }
