@@ -1,0 +1,64 @@
+{
+  "html": {
+    "development/main": {
+      "bytes": 577,
+      "sha256": "569b205e4d50e5a16016fc9446016ca7fbf481870cd5a525f13c8080a84d3475"
+    },
+    "development/about": {
+      "bytes": 882,
+      "sha256": "9cbc3499e988c7d8b41b79e68838401419094b72ebb8e85f2f537583356a1090"
+    },
+    "development/a0": {
+      "bytes": 1043,
+      "sha256": "4fc0d927134c07263aaafa07d9c186388fd25717aaf1f8e849dab593b7038700"
+    },
+    "development/metadataOnly": {
+      "bytes": 1103,
+      "sha256": "8c6c93130c4f999e6c7ab68643e5f5701972f222fd19fcff34cc26be1d7ab133"
+    },
+    "development/error": {
+      "bytes": 585,
+      "sha256": "31887e576991c0f9d95ebf13a695251e07054a36370c57ede27498ca4a239edc"
+    },
+    "development/playerA0": {
+      "bytes": 519,
+      "sha256": "2a53f8ee44f97dee42ebd8ad832f056d0c6ea1148da3bf9f9c27776d0ccd4026"
+    },
+    "development/playerOrphan": {
+      "bytes": 527,
+      "sha256": "41b565e1ed47b8b89a5d518210271deb5505b77cf0b023344dd70d9df633cb8d"
+    },
+    "production/main": {
+      "bytes": 593,
+      "sha256": "f4f359a09e64cbe61f684d8073b363981572e22e8d3ff359a09ccef1aedb6f4b"
+    },
+    "production/about": {
+      "bytes": 898,
+      "sha256": "9755a2695e6baaa785eb93b7fc80418ac6f6430427dffbaf7add2ca5d352a5ab"
+    },
+    "production/a0": {
+      "bytes": 1059,
+      "sha256": "c0a6169dda18e2fe7b83412985b71a50251168cb4a3f6af94bc647b13673a5e9"
+    },
+    "production/metadataOnly": {
+      "bytes": 1119,
+      "sha256": "13a5064203a05280ce1d12c69e861c4b046c1488070bfef3f99a9fdf70528f84"
+    },
+    "production/error": {
+      "bytes": 601,
+      "sha256": "0240b5fd47cc0367f4db93bc76d22b47afa2540444ce5897c7fa6abd8b4c7f9f"
+    },
+    "production/playerA0": {
+      "bytes": 519,
+      "sha256": "2a53f8ee44f97dee42ebd8ad832f056d0c6ea1148da3bf9f9c27776d0ccd4026"
+    },
+    "production/playerOrphan": {
+      "bytes": 527,
+      "sha256": "41b565e1ed47b8b89a5d518210271deb5505b77cf0b023344dd70d9df633cb8d"
+    }
+  },
+  "validator": {
+    "count": 9220,
+    "sha256": "d34356242d41d2d0407c9f775b036aff18af56df467902cab9f99bb1fcb28cb3"
+  }
+}

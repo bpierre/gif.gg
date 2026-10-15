@@ -7,11 +7,11 @@ dump or media directory.
 
 The application now uses:
 
-- Bun 1.4 or newer instead of PHP and Composer;
+- a Rust server instead of PHP and Composer, with Bun 1.4+ for browser builds and this migration tool;
 - SQLite instead of MySQL;
 - an external, writable `DATA_DIR` for the database and GIF files.
 
-Install dependencies and build the browser assets before deploying:
+Install dependencies and build the server and browser assets before deploying:
 
 ```sh
 bun install --frozen-lockfile
@@ -51,7 +51,7 @@ DATA_DIR/
 └── gifs/
 ```
 
-Start the Bun server with an explicit production data directory:
+Start the Rust server with an explicit production data directory:
 
 ```sh
 NODE_ENV=production DATA_DIR=/path/to/data bun run start
