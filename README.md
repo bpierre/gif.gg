@@ -9,22 +9,6 @@
 
 ```sh
 bun install --frozen-lockfile
-bun run dev
-```
-
-`dev` builds and watches the browser assets (client, worker, and CSS). Refresh the
-browser after changes. The application server is a single HTTP binary; Nix manages
-the local service and Nginx proxy, and Nginx handles production TLS.
-
-The neighboring `ubuntu-2022/nixos` configuration exposes the local VM at
-<http://gifgg.localhost:8080>. Its gif.gg package must be updated from the old Bun
-source pin to this Rust version before it can run this branch. Browser asset
-watching here does not update a packaged Nix service; rebuild its package/VM to
-test source changes there.
-
-For a standalone local run, build and start the same HTTP binary:
-
-```sh
 bun run build
 bun run start
 ```
@@ -32,6 +16,10 @@ bun run start
 Then open <http://localhost:3000>. Without `NODE_ENV=production`, data defaults to
 `/tmp/gifgg-development`; set `DATA_DIR` to override it. The server creates
 `gifgg.sqlite` and a `gifs/` directory there.
+
+Run `bun run dev` in another terminal to build and watch browser assets (client,
+worker, and CSS). Refresh the browser after changes. After server changes, rebuild
+with `bun run build:server` and restart `bun run start`.
 
 Format the repository with `bun run format`. Run formatting checks, type checks,
 tests, Rust lint checks, and the production build with `bun run check`.
