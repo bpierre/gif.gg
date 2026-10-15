@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { migrateMysqlDump } from "../../src/migration/mysql-to-sqlite";
-import { GifDatabase } from "../../src/server/database";
 
 const temporaryDirectories: string[] = [];
 
@@ -38,19 +37,19 @@ VALUES (NULL,4,'columnsIp',0,'2020-01-01 00:00:00');`,
 
     expect(migrateMysqlDump({ sourcePath, outputPath }).rows).toBe(4);
 
-    const database = new GifDatabase(outputPath);
+    const database = new Database(outputPath);
     try {
-      expect(database.findGif("nullIp")?.ip).toBeNull();
-      expect(database.findGif("emptyIp")?.ip).toBeNull();
-      expect(database.findGif("literalIp")?.ip).toBe("NULL");
-      expect(database.findGif("columnsIp")?.ip).toBeNull();
-      database.insertGif({
-        urlId: "newNull",
-        private: true,
+      expect(database.query("SELECT url_id, ip FROM gifs ORDER BY id").all()).toEqual([
+        { url_id: "nullIp", ip: null },
+        { url_id: "emptyIp", ip: null },
+        { url_id: "literalIp", ip: "NULL" },
+        { url_id: "columnsIp", ip: null },
+      ]);
+      database.query("INSERT INTO gifs (url_id, private, ip, created_at) VALUES (?, 1, NULL, ?)")
+        .run("newNull", "2020-01-01T00:00:00.000Z");
+      expect(database.query("SELECT ip FROM gifs WHERE url_id = 'newNull'").get()).toEqual({
         ip: null,
-        createdAt: "2020-01-01T00:00:00.000Z",
       });
-      expect(database.findGif("newNull")?.ip).toBeNull();
     } finally {
       database.close();
     }

@@ -10,8 +10,13 @@ import {
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 
-import { GIF_DATABASE_SCHEMA } from "../server/database";
 import { type LegacyGifRecord, parseLegacyGifRecords } from "./mysql-dump";
+
+const GIF_COLUMNS = readFileSync(new URL("../../server/gif-columns.sql", import.meta.url), "utf8");
+const GIF_DATABASE_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS gifs (${GIF_COLUMNS});
+  CREATE INDEX IF NOT EXISTS gifs_created_at_idx ON gifs (created_at);
+`;
 
 export interface MigrationOptions {
   sourcePath: string;

@@ -7,7 +7,7 @@ The MIT/public-domain license is included at the end of `msf_gif.h`.
 Distribution notices accompany the binary in `public/js/msf-gif.LICENSE.txt`.
 
 `public/js/msf-gif.wasm` is included so normal development and deployment
-only need Bun. To rebuild it, install Rust with the
+do not rebuild the encoder or require a WebAssembly toolchain. To rebuild it, install Rust with the
 `wasm32-unknown-unknown` target and clang with WebAssembly support, then run:
 
 ```sh

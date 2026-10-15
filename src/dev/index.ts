@@ -1,38 +1,82 @@
+import { watch } from "node:fs";
 import { resolve } from "node:path";
 
-import { createApp } from "../server/app";
-import { loadConfig } from "../server/config";
-import { MAX_UPLOAD_BODY_BYTES } from "../shared/upload-policy";
+const project = resolve(import.meta.dir, "../..");
+let server: Bun.Subprocess | undefined;
+let build: Bun.Subprocess | undefined;
+let stopping = false;
+let rebuilding = false;
+let pending = false;
+let debounce: ReturnType<typeof setTimeout> | undefined;
 
-const config = loadConfig();
-const app = createApp(config);
-const port = Number(process.env.PORT ?? "3000");
-
-if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) {
-  throw new Error("PORT must be an integer between 1 and 65535");
+async function rebuild(): Promise<void> {
+  pending = true;
+  if (rebuilding || stopping) return;
+  rebuilding = true;
+  try {
+    while (pending && !stopping) {
+      pending = false;
+      build = Bun.spawn(["cargo", "build", "--manifest-path", "server/Cargo.toml", "--locked"], {
+        cwd: project,
+        stdin: "inherit",
+        stdout: "inherit",
+        stderr: "inherit",
+      });
+      const status = await build.exited;
+      build = undefined;
+      if (stopping) break;
+      if (status !== 0) {
+        console.error("Rust build failed; waiting for changes.");
+        continue;
+      }
+      if (server) {
+        server.kill("SIGTERM");
+        await server.exited;
+      }
+      if (stopping) break;
+      server = Bun.spawn([resolve(project, "server/target/debug/gifgg-server"), "--dev"], {
+        cwd: project,
+        stdin: "inherit",
+        stdout: "inherit",
+        stderr: "inherit",
+      });
+      const started = server;
+      void started.exited.then((code) => {
+        if (!stopping && server === started && code !== 0) {
+          console.error(`Rust server exited (${code}); waiting for changes.`);
+        }
+      });
+    }
+  } finally {
+    rebuilding = false;
+  }
 }
 
-const certificate = Bun.file(resolve(".certs/localhost.pem"));
-const key = Bun.file(resolve(".certs/localhost-key.pem"));
-if (!(await certificate.exists()) || !(await key.exists())) {
-  throw new Error("development certificate is missing; run `bun run cert:dev`");
+function changed(): void {
+  clearTimeout(debounce);
+  debounce = setTimeout(() => void rebuild(), 100);
 }
 
-const server = Bun.serve({
-  port,
-  maxRequestBodySize: MAX_UPLOAD_BODY_BYTES,
-  tls: { cert: certificate, key },
-  fetch(request, bunServer) {
-    return app.fetch(request, bunServer);
-  },
-});
+// Watch source trees explicitly so Cargo's target directory cannot trigger
+// rebuild loops or consume recursive filesystem watches.
+const watchers = [
+  watch(resolve(project, "server/src"), { recursive: true }, changed),
+  watch(resolve(project, "server/templates"), { recursive: true }, changed),
+  watch(resolve(project, "server"), (_event, file) => {
+    if (file === "Cargo.toml" || file === "Cargo.lock" || file === "gif-columns.sql") changed();
+  }),
+];
 
-function stop(): void {
-  server.stop();
-  app.close();
+async function stop(): Promise<void> {
+  if (stopping) return;
+  stopping = true;
+  clearTimeout(debounce);
+  for (const watcher of watchers) watcher.close();
+  build?.kill("SIGTERM");
+  server?.kill("SIGTERM");
+  await Promise.all([build?.exited, server?.exited]);
 }
 
-process.once("SIGINT", stop);
-process.once("SIGTERM", stop);
-
-console.log(`gif.gg development server listening on ${server.url}`);
+process.once("SIGINT", () => void stop());
+process.once("SIGTERM", () => void stop());
+await rebuild();

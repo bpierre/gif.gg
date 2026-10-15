@@ -3,6 +3,7 @@
 ## Requirements
 
 - Bun 1.4+
+- Rust 1.89+ and a C compiler (for bundled SQLite and TLS dependencies)
 - `mkcert` for local development
 
 ## Development
@@ -20,23 +21,27 @@ The first run uses `mkcert` to install a local certificate authority and create
 a certificate. Then open <https://gif.localhost:3000>. Run `bun run cert:dev`
 to regenerate the certificate if needed.
 
-Dev builds the browser assets on startup, rebuilds client/worker/CSS changes,
-and restarts the server when its source changes. Refresh the browser to see edits.
+Dev builds the browser assets and Rust server on startup, rebuilds client/worker/CSS changes,
+and rebuilds and restarts the server when its source or templates change. Refresh the browser to see edits.
 Stopping dev stops its watchers too.
 
 Format the repository with `bun run format`. Run formatting checks, type checks,
-tests, and the production frontend build with `bun run check`.
+tests, Rust lint checks, and the production build with `bun run check`.
+
+The backend lives in `server/`. Tests cover HTTP responses, database upgrades, and
+a GIF validation corpus using temporary data directories. Captured response and
+validation fingerprints preserve the behavior from before the migration.
 
 Maintained browser code lives in `src/client/` and is compiled as an ES module.
 GIFs are encoded with `msf_gif` in a dedicated worker. The compiled WASM is
-included; normal builds need no native toolchain. Pinned source, licensing,
+included; rebuilding the encoder separately requires clang with WebAssembly support. Pinned source, licensing,
 and optional rebuild instructions are in [tools/msf-gif](tools/msf-gif/README.md).
 
 See [UPGRADE.md](UPGRADE.md) for the legacy MySQL-to-SQLite migration procedure.
 
 ## Production
 
-Build the browser assets, then start with an explicit persistent directory:
+Build the server and browser assets, then start with an explicit persistent directory:
 
 ```sh
 bun install --frozen-lockfile
@@ -46,6 +51,12 @@ NODE_ENV=production DATA_DIR=/absolute/path/to/gifgg-data bun run start
 
 Production serves HTTP behind your TLS reverse proxy. The default port is `3000`;
 set `PORT` to override it.
+
+The production server is `server/target/release/gifgg-server`. It can run directly
+without Bun. To deploy outside the checkout, place the built `public/` directory
+beside the binary. Keep the same `NODE_ENV`, `DATA_DIR`, `PORT`, and `APP_VERSION`
+settings. Existing SQLite databases, GIF files, and URLs require no data migration.
+Stop the running server before switching binaries.
 
 ## Uploads
 

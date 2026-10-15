@@ -5,6 +5,7 @@
 /public/js/gif-worker.js
 /public/js/*.map
 /tools/msf-gif/target/
+/server/target/
 /vendor/
 /node_modules/
 /.certs/

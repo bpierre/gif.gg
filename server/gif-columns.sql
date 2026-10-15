@@ -1,0 +1,5 @@
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    url_id TEXT NOT NULL UNIQUE,
+    private INTEGER NOT NULL DEFAULT 1 CHECK (private IN (0, 1)),
+    ip TEXT,
+    created_at TEXT NOT NULL
